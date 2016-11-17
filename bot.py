@@ -59,7 +59,7 @@ class MessageType(Enum):
     def get_type(text):
         if text == "die":
             return MessageType.die
-        elif text == "forget":
+        elif text == "*forget":
             return MessageType.forget
         else:
             return MessageType.normal
