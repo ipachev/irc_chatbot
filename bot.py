@@ -1,7 +1,9 @@
 import re
 import sys
-from unittest import TestCase
 from enum import Enum
+
+from unittest import TestCase
+
 
 class Bot:
     def __init__(self, name):
@@ -10,17 +12,19 @@ class Bot:
         self.channel = None
 
     def connect(self, irc_channel):
-        #TODO irc stuff here
         self.channel = irc_channel
+        self.channel.connect(self.name)
+        self.channel.add_message_callback(self.message_recieved)
 
-    def message_recieved(self, message, source_user):
+    def message_recieved(self, message, source_user=""):
+        print("RECEIVED MESSAGE", message)
         match = re.match(self.pattern, message)
         if match:
             text = self.get_text(match)
             if not self.special_message(text):
                 reply = self.create_reply(source_user, text)
                 if reply:
-                    self.send_message(source_user, reply)
+                    self.send_message(reply, source_user)
 
     def special_message(self, text):
         msg_type = MessageType.get_type(text)
@@ -38,15 +42,20 @@ class Bot:
     def create_reply(self, source_user, text):
         return "hi"
 
-    def send_message(self, target_user, text):
-        message = "{}: {}".format(target_user, text)
-        self.channel.send(message)
+    def send_message(self, text, target_user=None):
+        if target_user is not None:
+            message = "{}: {}".format(target_user, text)
+        else:
+            message = text
+        self.channel.send_message(message)
 
     def forget(self):
         #TODO: delete knowledge db
         pass
 
     def die(self):
+        self.send_message("good bye cruel world")
+        self.channel.disconnect()
         sys.exit(0)
 
 
