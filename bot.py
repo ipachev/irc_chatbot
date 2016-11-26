@@ -4,8 +4,10 @@
 #
 # Joel Rosdahl <joel@rosdahl.net>
 # slight modifications by Foaad Khosmood
+# decent amount of modifications by Ivan
 
-"""A simple example bot.
+"""
+A simple example bot.
 This is an example bot that uses the SingleServerIRCBot class from
 irc.bot.  The bot enters a channel and listens for commands in
 private messages and channel traffic.  Commands in channel messages
@@ -23,11 +25,16 @@ The known commands are:
 import irc.bot
 import irc.strings
 from irc.client import ip_numstr_to_quad, ip_quad_to_numstr
+from threading import Lock
+
+from greeting import GreetingStateMachine, State
 
 class Bot(irc.bot.SingleServerIRCBot):
     def __init__(self, channel, nickname, server, port=6667):
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
         self.channel = channel
+        self.conversations = {}
+        self.message_lock = Lock()
 
     def on_nicknameinuse(self, c, e):
         c.nick(c.get_nickname() + "_")
@@ -85,14 +92,32 @@ class Bot(irc.bot.SingleServerIRCBot):
                 ip_quad_to_numstr(dcc.localaddress),
                 dcc.localport))
         elif cmd == "hello": #Foaad: change this
-            c.privmsg(self.channel, "well double hello to you too!")
+            self.join_conversation(nick)
         elif cmd == "about":
             c.privmsg(self.channel, "I was made for Foaad Khosmood for the CPE 466 class in Spring 2016")
         elif cmd == "usage":
             #Foaad: change this
             c.privmsg(self.channel, "I can answer questions like this: ....") 
         else:
-            c.notice(nick, "Not understood: " + cmd)
+            # send the message to the correct conversation manager
+            if nick in self.conversations:
+                self.conversations[nick].incoming_message(cmd)
+            # else add a conversation for this nick???
+
+    def join_conversation(self, partner_name):
+        if partner_name not in self.conversations:
+            print("Added conversation with", partner_name)
+            new_convo = GreetingStateMachine(partner_name, self.send_message, self.finish_conversation, State.outreach_reply)
+            self.conversations[partner_name] = new_convo
+            new_convo.start()
+            return new_convo
+
+    def finish_conversation(self, partner_name):
+        del self.conversations[partner_name]
+
+    def send_message(self, message):
+        with self.message_lock:
+            self.connection.privmsg(self.channel, message)
 
 def main():
     import sys
@@ -112,7 +137,7 @@ def main():
         port = 6667
     channel = sys.argv[2]
     nickname = sys.argv[3]
-
+    print("starting bot")
     bot = Bot(channel, nickname, server, port)
     bot.start()
 
