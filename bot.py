@@ -113,6 +113,7 @@ class Bot(irc.bot.SingleServerIRCBot):
             return new_convo
 
     def finish_conversation(self, partner_name):
+        print("Removed conversation with", partner_name)
         del self.conversations[partner_name]
 
     def send_message(self, message):

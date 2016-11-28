@@ -1,6 +1,8 @@
 from enum import Enum
 from queue import Queue, Empty
 from threading import Thread
+from time import sleep
+from random import uniform
 
 
 class State(Enum):
@@ -59,6 +61,7 @@ class GreetingStateMachine:
             incoming_message = None
             try:
                 incoming_message = self.message_queue.get(timeout=30)
+                sleep(uniform(1, 3))
             except Empty:
                 self.state = State.second_outreach if self.state == State.initial_outreach else State.give_up
             handler = self.get_handler()
@@ -115,15 +118,15 @@ class GreetingStateMachine:
             State.give_up: self.handle_give_up
         }[self.state]
 
-def reply_sink(message):
-    print(message)
-
-def finish_hook(partner):
-    print("finished convo with", partner)
 
 
 
 def main():
+    def reply_sink(message):
+        print(message)
+
+    def finish_hook(partner):
+        print("finished convo with", partner)
     gsm = GreetingStateMachine("test_partner", reply_sink, finish_hook, start_state=State.outreach_reply)
     def test():
         text = None
@@ -134,7 +137,6 @@ def main():
             text = input()
             gsm.incoming_message(text)
     test()
-
 
 if __name__ == "__main__":
     main()
