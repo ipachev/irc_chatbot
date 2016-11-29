@@ -5,7 +5,6 @@ from time import sleep
 from random import uniform, choice
 import re
 
-from lang import NamedEntityRecognizer
 from lang import NounPhraseExtractor
 
 import wikipedia
@@ -38,7 +37,6 @@ class ConversationStateMachine:
         self.thread = Thread(target=self.loop)
         self.reply_sink = reply_sink
         self.finish_hook = finish_hook
-        self.ner = NamedEntityRecognizer()
         self.npe = NounPhraseExtractor()
 
     def start(self, initial_message=None):
@@ -103,13 +101,10 @@ class ConversationStateMachine:
         return "generic inquiry"
 
     def handle_inquiry(self, inquiry):
-        nes = self.ner.get_named_entities(inquiry)
         nps = self.npe.get_noun_phrases(inquiry)
-
         reply = None
-        if len(nes) > 0:
-            reply = self.create_reply(nes)
-        elif len(nps) > 0:
+        if len(nps) > 0:
+            # create a reply using extracted noun phrases
             reply = self.create_reply(nps)
 
         if not reply:
@@ -148,15 +143,16 @@ class ConversationStateMachine:
                 # an exception is thrown when the search fails
                 pass
         wiki_summaries = [re.sub(r"\s\(.*\),?", "", s) for s in wiki_summaries]
-        return "Did you know that " + choice(wiki_summaries) if len(wiki_summaries) > 0 else None
+        return "Did you know that " + wiki_summaries[0] if len(wiki_summaries) > 0 else None
 
 def main():
     def reply_sink(message):
         print(message)
 
     def finish_hook(partner):
-        print("finished convo with", partner)
-    gsm = ConversationStateMachine("test_partner", reply_sink, finish_hook, start_state=State.outreach_reply)
+        print("finished convo", partner)
+
+    gsm = ConversationStateMachine("", reply_sink, finish_hook, start_state=State.outreach_reply)
     def test():
         text = None
         text = input()
