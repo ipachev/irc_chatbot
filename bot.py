@@ -27,7 +27,7 @@ import irc.strings
 from irc.client import ip_numstr_to_quad, ip_quad_to_numstr
 from threading import Lock
 
-from greeting import GreetingStateMachine, State
+from conversation import ConversationStateMachine, State
 
 class Bot(irc.bot.SingleServerIRCBot):
     def __init__(self, channel, nickname, server, port=6667):
@@ -92,7 +92,7 @@ class Bot(irc.bot.SingleServerIRCBot):
                 ip_quad_to_numstr(dcc.localaddress),
                 dcc.localport))
         elif cmd == "hello": #Foaad: change this
-            self.join_conversation(nick)
+            self.join_conversation(nick, cmd)
         elif cmd == "about":
             c.privmsg(self.channel, "I was made for Foaad Khosmood for the CPE 466 class in Spring 2016")
         elif cmd == "usage":
@@ -102,12 +102,20 @@ class Bot(irc.bot.SingleServerIRCBot):
             # send the message to the correct conversation manager
             if nick in self.conversations:
                 self.conversations[nick].incoming_message(cmd)
-            # else add a conversation for this nick???
 
-    def join_conversation(self, partner_name):
+    def join_conversation(self, partner_name, initial_message=None):
         if partner_name not in self.conversations:
-            print("Added conversation with", partner_name)
-            new_convo = GreetingStateMachine(partner_name, self.send_message, self.finish_conversation, State.outreach_reply)
+            print("Joined conversation with", partner_name)
+            new_convo = ConversationStateMachine(partner_name, self.send_message, self.finish_conversation, State.outreach_reply)
+            self.conversations[partner_name] = new_convo
+            new_convo.start(initial_message)
+            return new_convo
+
+    def start_conversation(self, partner_name):
+        # TODO: Call this to start a conversation with someone
+        if partner_name not in self.conversations:
+            print("Started conversation with", partner_name)
+            new_convo = ConversationStateMachine(partner_name, self.send_message, self.finish_conversation, State.start)
             self.conversations[partner_name] = new_convo
             new_convo.start()
             return new_convo

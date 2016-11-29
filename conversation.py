@@ -2,8 +2,13 @@ from enum import Enum
 from queue import Queue, Empty
 from threading import Thread
 from time import sleep
-from random import uniform
+from random import uniform, choice
+import re
 
+from lang import NamedEntityRecognizer
+from lang import NounPhraseExtractor
+
+import wikipedia
 
 class State(Enum):
     start = 1
@@ -18,8 +23,7 @@ class State(Enum):
     end = 10
 
 
-class GreetingStateMachine:
-
+class ConversationStateMachine:
     def __init__(self, partner_name, reply_sink, finish_hook=None, start_state=State.start):
         """
         Creates a greeting state machine that handles the greeting of a conversation by producing replies.
@@ -34,12 +38,14 @@ class GreetingStateMachine:
         self.thread = Thread(target=self.loop)
         self.reply_sink = reply_sink
         self.finish_hook = finish_hook
+        self.ner = NamedEntityRecognizer()
+        self.npe = NounPhraseExtractor()
 
-    def start(self):
+    def start(self, initial_message=None):
         """
         Call this so start the greeting state machine
         """
-        self.begin_conversation()
+        self.begin_conversation(initial_message)
         self.thread.start()
 
     def incoming_message(self, message):
@@ -54,7 +60,8 @@ class GreetingStateMachine:
         Sends a reply to the person this greeting state machine is conversing with using the reply sink.
         :param message: Message to be sent as a reply
         """
-        self.reply_sink("{}: {}".format(self.conversation_partner, message))
+        outgoing_message = "{}: {}".format(self.conversation_partner, message)
+        self.reply_sink(outgoing_message)
 
     def loop(self):
         while self.state != State.end:
@@ -76,12 +83,12 @@ class GreetingStateMachine:
         self.state = State.end
         return "whatever"
 
-    def begin_conversation(self):
+    def begin_conversation(self, initial_message):
         if self.state == State.start:
             self.state = State.initial_outreach
             self.reply(self.perform_outreach())
         elif self.state == State.outreach_reply:
-            self.reply(self.handle_outreach())
+            self.reply(self.handle_outreach(initial_message))
 
     def perform_outreach(self):
         if self.state == State.second_outreach:
@@ -96,14 +103,26 @@ class GreetingStateMachine:
         return "generic inquiry"
 
     def handle_inquiry(self, inquiry):
-        if self.state == State.inquiry_reply2:
-            reply = "inquiry_reply2"
-        else:
-            reply = "inquiry_reply + inquiry2"
+        nes = self.ner.get_named_entities(inquiry)
+        nps = self.npe.get_noun_phrases(inquiry)
+
+        reply = None
+        if len(nes) > 0:
+            reply = self.create_reply(nes)
+        elif len(nps) > 0:
+            reply = self.create_reply(nps)
+
+        if not reply:
+            # they didn't say anything interesting
+            # i.e. we could not extract any named entities or noun phrases
+            if self.state == State.inquiry_reply2:
+                reply = "default_inquiry_reply"
+            else:
+                reply = "default_inquiry_reply + default_inquiry2"
         self.state = State.end
         return reply
 
-    def handle_outreach(self):
+    def handle_outreach(self, outreach):
         self.state = State.inquiry_reply
         return "outreach reply"
 
@@ -118,8 +137,18 @@ class GreetingStateMachine:
             State.give_up: self.handle_give_up
         }[self.state]
 
-
-
+    def create_reply(self, entities):
+        # fetch summaries of named entities if they exist
+        wiki_summaries = []
+        for ent in entities:
+            try:
+                summary = wikipedia.summary(ent)
+                wiki_summaries.append(summary)
+            except:
+                # an exception is thrown when the search fails
+                pass
+        wiki_summaries = [re.sub(r"\s\(.*\),?", "", s) for s in wiki_summaries]
+        return "Did you know that " + choice(wiki_summaries) if len(wiki_summaries) > 0 else None
 
 def main():
     def reply_sink(message):
@@ -127,12 +156,11 @@ def main():
 
     def finish_hook(partner):
         print("finished convo with", partner)
-    gsm = GreetingStateMachine("test_partner", reply_sink, finish_hook, start_state=State.outreach_reply)
+    gsm = ConversationStateMachine("test_partner", reply_sink, finish_hook, start_state=State.outreach_reply)
     def test():
         text = None
         text = input()
-        gsm.incoming_message(text)
-        gsm.start()
+        gsm.start(text)
         while text != "":
             text = input()
             gsm.incoming_message(text)
