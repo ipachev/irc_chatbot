@@ -28,13 +28,14 @@ from irc.client import ip_numstr_to_quad, ip_quad_to_numstr
 from threading import Lock
 
 from conversation import ConversationStateMachine, State
+from monitor import Monitor
 
 class Bot(irc.bot.SingleServerIRCBot):
     def __init__(self, channel, nickname, server, port=6667):
         irc.bot.SingleServerIRCBot.__init__(self, [(server, port)], nickname, nickname)
         self.channel = channel
-        self.conversations = {}
         self.message_lock = Lock()
+        self.monitor = Monitor(self.send_message)
 
     def on_nicknameinuse(self, c, e):
         c.nick(c.get_nickname() + "_")
@@ -49,6 +50,8 @@ class Bot(irc.bot.SingleServerIRCBot):
         a = e.arguments[0].split(":", 1)
         if len(a) > 1 and irc.strings.lower(a[0]) == irc.strings.lower(self.connection.get_nickname()):
             self.do_command(e, a[1].strip())
+        else:
+            self.monitor.handle_indirect(e.source.nick, e.arguments[0])
         return
 
     def on_dccmsg(self, c, e):
@@ -91,38 +94,12 @@ class Bot(irc.bot.SingleServerIRCBot):
             c.ctcp("DCC", nick, "CHAT chat %s %d" % (
                 ip_quad_to_numstr(dcc.localaddress),
                 dcc.localport))
-        elif cmd == "hello": #Foaad: change this
-            self.join_conversation(nick, cmd)
         elif cmd == "about":
-            c.privmsg(self.channel, "I was made for Foaad Khosmood for the CPE 466 class in Spring 2016")
+            c.privmsg(self.channel, "A Sheldon-Chatbot for CPE 582 Fall 2016")
         elif cmd == "usage":
-            #Foaad: change this
-            c.privmsg(self.channel, "I can answer questions like this: ....") 
+            c.privmsg(self.channel, "Talk to ")
         else:
-            # send the message to the correct conversation manager
-            if nick in self.conversations:
-                self.conversations[nick].incoming_message(cmd)
-
-    def join_conversation(self, partner_name, initial_message=None):
-        if partner_name not in self.conversations:
-            print("Joined conversation with", partner_name)
-            new_convo = ConversationStateMachine(partner_name, self.send_message, self.finish_conversation, State.outreach_reply)
-            self.conversations[partner_name] = new_convo
-            new_convo.start(initial_message)
-            return new_convo
-
-    def start_conversation(self, partner_name):
-        # TODO: Call this to start a conversation with someone
-        if partner_name not in self.conversations:
-            print("Started conversation with", partner_name)
-            new_convo = ConversationStateMachine(partner_name, self.send_message, self.finish_conversation, State.start)
-            self.conversations[partner_name] = new_convo
-            new_convo.start()
-            return new_convo
-
-    def finish_conversation(self, partner_name):
-        print("Removed conversation with", partner_name)
-        del self.conversations[partner_name]
+            self.monitor.handle_direct(nick, cmd)
 
     def send_message(self, message):
         with self.message_lock:

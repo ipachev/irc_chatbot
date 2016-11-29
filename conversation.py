@@ -1,26 +1,41 @@
-from enum import Enum
+from enum import IntEnum
 from queue import Queue, Empty
 from threading import Thread
 from time import sleep
 from random import uniform, choice
 import re
+import nltk.data
 
 from lang import NounPhraseExtractor
+from sheldon import Sheldon
 
 import wikipedia
 
-class State(Enum):
+class State(IntEnum):
     start = 1
     initial_outreach = 2
     second_outreach = 3
     outreach_reply = 4
     inquiry = 5
     inquiry_reply = 6
-    inquiry2 = 7
-    inquiry_reply2 = 8
-    give_up = 9
-    end = 10
+    absorb = 7
+    inquiry2 = 8
+    inquiry_reply2 = 9
+    give_up = 10
+    end = 11
+    free = 12
 
+
+BasicResponses = {State.initial_outreach: ["hi","hello"],
+    State.second_outreach: ["I said hi", "excuse me, hello?"],
+    State.outreach_reply: ["hi", "hello back at you!"],
+    State.inquiry: ["how are you?", "what’s happening?"],
+    State.inquiry_reply: ["I’m good", "I’m fine"],
+    State.absorb: None,
+    State.inquiry2: ["how about you?", "and yourself?"],
+    State.inquiry_reply2: ["I’m good", "I’m fine, thanks for asking"],
+    State.give_up: ["Ok, forget you.", "Whatever. "]
+    }
 
 class ConversationStateMachine:
     def __init__(self, partner_name, reply_sink, finish_hook=None, start_state=State.start):
@@ -31,6 +46,7 @@ class ConversationStateMachine:
         :param start_state: Can either be State.outreach_reply or State.start. State.start will initiate the conversation,
         while State.outreach_reply will partake in a conversation already initiated by someone else.
         """
+        self.sheldon = Sheldon()
         self.state = start_state
         self.conversation_partner = partner_name
         self.message_queue = Queue()
@@ -38,12 +54,16 @@ class ConversationStateMachine:
         self.reply_sink = reply_sink
         self.finish_hook = finish_hook
         self.npe = NounPhraseExtractor()
+        self.sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
 
     def start(self, initial_message=None):
         """
         Call this so start the greeting state machine
         """
-        self.begin_conversation(initial_message)
+        if not initial_message:
+            self.reply(choice(BasicResponses[self.state]))
+        else:
+            self.message_queue.put(initial_message)
         self.thread.start()
 
     def incoming_message(self, message):
@@ -69,81 +89,27 @@ class ConversationStateMachine:
                 sleep(uniform(1, 3))
             except Empty:
                 self.state = State.second_outreach if self.state == State.initial_outreach else State.give_up
-            handler = self.get_handler()
-            outgoing_message = handler(incoming_message)
-            self.reply(outgoing_message)
+
+            if self.state == State.free:
+                #Create a custome state that handles free-form conversation
+                res = self.sheldon.respond(incoming_message)
+                if res:
+                    break
+            else:
+                #Default FSM Pathway
+                if self.state == State.end:
+                    break
+                outgoing_message = choice(BasicResponses[self.state])
+                self.reply(outgoing_message)
+                self.state = State(self.state + 2)
+                if (self.state == State.inquiry2):
+                    self.reply(choice(BasicResponses[self.state]))
+                    self.state = State(self.state + 2)
+                if (self.state == State.give_up):
+                    break
         if self.finish_hook:
             self.finish_hook(self.conversation_partner)
 
-    def handle_give_up(self, message):
-        assert self.state == State.give_up
-        assert message is None
-        self.state = State.end
-        return "whatever"
-
-    def begin_conversation(self, initial_message):
-        if self.state == State.start:
-            self.state = State.initial_outreach
-            self.reply(self.perform_outreach())
-        elif self.state == State.outreach_reply:
-            self.reply(self.handle_outreach(initial_message))
-
-    def perform_outreach(self):
-        if self.state == State.second_outreach:
-            reply = "are you there??"
-        else:
-            reply = "hello there"
-        self.state = State.inquiry
-        return reply
-
-    def perform_inquiry(self, outreach_reply):
-        self.state = State.inquiry_reply2
-        return "generic inquiry"
-
-    def handle_inquiry(self, inquiry):
-        nps = self.npe.get_noun_phrases(inquiry)
-        reply = None
-        if len(nps) > 0:
-            # create a reply using extracted noun phrases
-            reply = self.create_reply(nps)
-
-        if not reply:
-            # they didn't say anything interesting
-            # i.e. we could not extract any named entities or noun phrases
-            if self.state == State.inquiry_reply2:
-                reply = "default_inquiry_reply"
-            else:
-                reply = "default_inquiry_reply + default_inquiry2"
-        self.state = State.end
-        return reply
-
-    def handle_outreach(self, outreach):
-        self.state = State.inquiry_reply
-        return "outreach reply"
-
-    def get_handler(self):
-        return {
-            State.initial_outreach: self.perform_outreach,
-            State.second_outreach: self.perform_outreach,
-            State.inquiry: self.perform_inquiry,
-            State.inquiry_reply: self.handle_inquiry,
-            State.inquiry2: self.perform_inquiry,
-            State.inquiry_reply2: self.handle_inquiry,
-            State.give_up: self.handle_give_up
-        }[self.state]
-
-    def create_reply(self, entities):
-        # fetch summaries of named entities if they exist
-        wiki_summaries = []
-        for ent in entities:
-            try:
-                summary = wikipedia.summary(ent)
-                wiki_summaries.append(summary)
-            except:
-                # an exception is thrown when the search fails
-                pass
-        wiki_summaries = [re.sub(r"\s\(.*\),?", "", s) for s in wiki_summaries]
-        return "Did you know that " + wiki_summaries[0] if len(wiki_summaries) > 0 else None
 
 def main():
     def reply_sink(message):
