@@ -31,6 +31,7 @@ class Sheldon:
         self.sent_detector = nltk.data.load('tokenizers/punkt/english.pickle')
         self.reply = reply
         self.nxtmessage = None
+        self.lastinsight = None
 
     def handle_timeout(self):
         self.nxtmessage = "It must be terribly inconvenient to be such a slow thinker; I'm done talking to you."
@@ -40,19 +41,28 @@ class Sheldon:
 
     def handle_message(self, inquiry):
         reply = None
-        try:
-            nps = self.npe.get_noun_phrases(inquiry)
-        except:
-            return reply
-
         if self.nxtmessage:
             self.reply(self.nxtmessage)
             return True
-        elif len(nps) > 0:
+
+        try:
+            nps = self.npe.get_noun_phrases(inquiry)
+        except:
+            nps = []
+
+
+        if len(nps) > 0:
             kind = "question" if "?" in inquiry else "statement"
             reply = self.__create_reply(nps, kind=kind)
         elif any([w in inquiry for w in negativewords]):
             reply = choice(defenses)
+        elif self.lastinsight:
+            try:
+                nps = self.npe.get_noun_phrases(self.lastinsight)
+                kind = "question" if "?" in inquiry else "statement"
+                reply = self.__create_reply(nps, kind=kind)
+            except:
+                pass
         if not reply:
             kind = "question" if "?" in inquiry else "statement"
             self.reply(choice(flattery))
@@ -64,8 +74,17 @@ class Sheldon:
         options = [self.npe.get_sentence(entity) for entity in entities]
         for opt in options:
             if len(opt) > 0:
+                fact = choice(opt)
+                fact = fact[0].lower() + fact[1:]
+                if (fact == self.lastinsight):
+                    continue
+                if self.lastinsight:
+                    self.lastinsight = None
+                    return "Additionally, it is true that " + fact
+
+                self.lastinsight = fact
                 if kind == "question":
-                    return "You suprise me by your ignorance; it is obvious that " + choice(opt)
+                    return "You suprise me by your ignorance; it is obvious that " + fact
                 else:
-                    return "Did you know that " + choice(opt) + "?"
+                    return "Did you know that " + fact[:-1] + "?"
         return None

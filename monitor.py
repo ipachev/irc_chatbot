@@ -11,6 +11,7 @@ class Monitor:
         self.lastinitiate = time.time()
 
     def quit(self):
+        self.send_message = None
         for nick in self.conversations:
             self.conversations[nick].stop()
 

@@ -55,7 +55,8 @@ class ConversationStateMachine:
         :param message: Message to be sent as a reply
         """
         outgoing_message = "{}: {}".format(self.conversation_partner, message)
-        self.reply_sink(outgoing_message)
+        if not self.stopmsg:
+            self.reply_sink(outgoing_message)
 
     def loop(self):
         while(not self.stopmsg):
