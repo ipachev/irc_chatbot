@@ -97,6 +97,10 @@ class Bot(irc.bot.SingleServerIRCBot):
             c.privmsg(self.channel, "A Sheldon-Chatbot for CPE 582 Fall 2016")
         elif cmd == "usage":
             c.privmsg(self.channel, "Talk to ")
+        elif cmd == "forget*":
+            self.monitor.quit()
+            del self.monitor
+            self.monitor = Monitor(self.send_message)
         else:
             self.monitor.handle_direct(nick, cmd)
 

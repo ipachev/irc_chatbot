@@ -20,7 +20,7 @@ class ConversationStateMachine:
         """
         self.sheldon = Sheldon(self.reply)
         self.generic = Generic(self.reply)
-        self.active = self.generic
+        self.active = self.generic if default_persona == "generic" else self.sheldon
 
         self.conversation_partner = partner_name
         self.message_queue = Queue()

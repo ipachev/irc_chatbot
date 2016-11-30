@@ -19,20 +19,19 @@ class NounPhraseExtractor:
         {<ENTITY>}
 
     NP:
-        {<NOUN><IN>?<NOUN>}  # Above, connected with in/of/etc...
         {<NOUN>}
+        {<NOUN><IN>?<NOUN>}  # Above, connected with in/of/etc...
+
 """
         self.chunker = nltk.RegexpParser(grammar)
         self.stopwords = stopwords.words('english')
         self.corpus = []
-        for resource in ["data/scientists"]:
+        for resource in ["data/astronomy.dat", "data/computerscience.dat", "data/physics.dat"]:
             with open(resource) as f:
                 for l in f:
                     splt = l.strip().split("~~")
                     if len(splt) > 1:
                         self.corpus.append(l.strip().split("~~")[1])
-
-
 
     def get_noun_phrases(self, text):
         """
@@ -44,7 +43,9 @@ class NounPhraseExtractor:
         pos_tokens = nltk.pos_tag(tokens)
         ne_tokens = nltk.ne_chunk(pos_tokens, binary=True)
         tree = self.chunker.parse(ne_tokens)
-        return self.get_terms(tree)
+        terms = self.get_terms(tree)
+        print(terms)
+        return terms
 
     def named_leaves(self, tree):
         """Finds NP (nounphrase) leaf nodes of a chunk tree."""

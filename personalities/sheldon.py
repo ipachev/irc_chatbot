@@ -23,7 +23,7 @@ defenses = [
 "That's axiomatically wrong."
 ]
 
-negativewords = ["annoying", "annoy", "rude", "inappropriate", "frustrate", "obscene", "know-it-all", "loud", "bad", "frustrating", "stupid", "lame"]
+negativewords = ["ignorant", "oblivious", "uncouth", "annoying", "annoy", "rude", "inappropriate", "frustrate", "obscene", "know-it-all", "loud", "bad", "frustrating", "stupid", "lame"]
 
 class Sheldon:
     def __init__(self, reply):
@@ -32,8 +32,6 @@ class Sheldon:
         self.reply = reply
         self.nxtmessage = None
 
-
-
     def handle_timeout(self):
         self.nxtmessage = "It must be terribly inconvenient to be such a slow thinker; I'm done talking to you."
 
@@ -41,8 +39,11 @@ class Sheldon:
         return False
 
     def handle_message(self, inquiry):
-        nps = self.npe.get_noun_phrases(inquiry)
         reply = None
+        try:
+            nps = self.npe.get_noun_phrases(inquiry)
+        except:
+            return reply
 
         if self.nxtmessage:
             self.reply(self.nxtmessage)
