@@ -6,7 +6,6 @@ from random import uniform
 from personalities.sheldon import Sheldon
 from personalities.generic import Generic
 
-import wikipedia
 
 
 class ConversationStateMachine:
