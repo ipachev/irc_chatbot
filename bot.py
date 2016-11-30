@@ -27,7 +27,6 @@ import irc.strings
 from irc.client import ip_numstr_to_quad, ip_quad_to_numstr
 from threading import Lock
 
-from conversation import ConversationStateMachine, State
 from monitor import Monitor
 
 class Bot(irc.bot.SingleServerIRCBot):

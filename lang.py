@@ -24,6 +24,15 @@ class NounPhraseExtractor:
 """
         self.chunker = nltk.RegexpParser(grammar)
         self.stopwords = stopwords.words('english')
+        self.corpus = []
+        for resource in ["data/scientists"]:
+            with open(resource) as f:
+                for l in f:
+                    splt = l.strip().split("~~")
+                    if len(splt) > 1:
+                        self.corpus.append(l.strip().split("~~")[1])
+
+
 
     def get_noun_phrases(self, text):
         """
@@ -70,6 +79,12 @@ class NounPhraseExtractor:
             terms.append(term)
         return terms
 
+    def get_sentence(self, phrase):
+        result = []
+        for sent in self.corpus:
+            if phrase.lower() in sent.lower():
+                result.append(sent)
+        return result
 
 from unittest import TestCase
 
@@ -77,7 +92,7 @@ class TestStuff(TestCase):
     def setUp(self):
         self.npe = NounPhraseExtractor()
 
-    def test(self):
+    def testPhrases(self):
         terms = self.npe.get_noun_phrases("I am from the capital of California and I like to write in programming languages")
         self.assertTrue("capital of california" == terms[0])
         self.assertTrue("programming language" == terms[1])
@@ -93,3 +108,7 @@ class TestStuff(TestCase):
         terms = self.npe.get_noun_phrases("I like to write in programming languages and I am from Mexico city")
         self.assertTrue("mexico city" == terms[0])
         self.assertTrue("programming language" == terms[1])
+
+    def testSentences(self):
+        terms = self.npe.get_noun_phrases("I am from the capital of California and I like to write in programming languages")
+        print(self.npe.get_sentence(terms[1]))

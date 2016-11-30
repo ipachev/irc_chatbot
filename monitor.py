@@ -1,4 +1,7 @@
-from conversation import ConversationStateMachine, State
+from random import randint
+
+from conversation import ConversationStateMachine
+
 
 class Monitor:
     def __init__(self, send_message):
@@ -6,7 +9,8 @@ class Monitor:
         self.send_message = send_message
 
     def handle_indirect(self, nick, cmd):
-        print("YOU TALKING TO ME?")
+        if randint(1, 100) > 1:
+            self.start_conversation(nick)
 
     def handle_direct(self, nick, cmd):
         if nick not in self.conversations and (cmd == "hello" or cmd == "hi"):
@@ -19,7 +23,7 @@ class Monitor:
     def join_conversation(self, partner_name, initial_message=None):
         if partner_name not in self.conversations:
             print("Joined conversation with", partner_name)
-            new_convo = ConversationStateMachine(partner_name, self.send_message, self.finish_conversation, State.outreach_reply)
+            new_convo = ConversationStateMachine(partner_name, self.send_message, self.finish_conversation)
             self.conversations[partner_name] = new_convo
             new_convo.start(initial_message)
             return new_convo
@@ -27,8 +31,8 @@ class Monitor:
     def start_conversation(self, partner_name):
         if partner_name not in self.conversations:
             print("Started conversation with", partner_name)
-            new_convo = ConversationStateMachine(partner_name, self.send_message, self.finish_conversation, State.start)
-            self.monitor.conversations[partner_name] = new_convo
+            new_convo = ConversationStateMachine(partner_name, self.send_message, self.finish_conversation)
+            self.conversations[partner_name] = new_convo
             new_convo.start()
             return new_convo
 
