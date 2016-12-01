@@ -64,16 +64,48 @@ This helps us try to pick the most important noun phrase, which we can then look
 Our bot is able to handle multiple conversations at the same time by maintaining a mapping between conversation partner and Conversation object.
 The monitor handles starting or joining a conversation, which involves constructing an appropriate Conversation object.
 The monitor also feeds messages from relevant conversation partners to the appropriate Conversation by inserting it into the Conversation's incoming message queue.
-Based on whether we can extract relevant noun phrases in the initial message using our named-entity noun phrase extractor, we choose between the phase 2 personality or the phase 3 personality.
-If the Monitor decides to start a conversation, it defaults to the phase 2 (complex greeting) personality.
+
+Based on whether we can extract relevant noun phrases in the initial message using our named-entity noun phrase extractor, we choose between the phase 2 personality or the phase 3 personality when creating a Conversation.
+If the Monitor decides to start a Conversation, it defaults to the phase 2 (complex greeting) personality.
+If we use the complex greeting personality for a Conversation, after the greeting is complete, we switch to the sheldon personality.
+
 The Conversation contains a thread that runs a loop that processes each message in the incoming message queue and handles timeouts if the message queue is empty for too long.
-If we use the complex greeting personality, after the greeting is complete, we switch to the sheldon personality.
-The
+Each personality that is used is passed a callback that can be used to send outgoing messages through IRC to the Conversation's appropriate target user.
+Because conversations are running in separate threads, it is necessary to create a lock around the method used to send IRC messages so that different conversations cannot send messages at the same time.
+
+The complex greeting personality is simply an implementation of the state machine described in the phase 2 specifications of the lab assignment.
+The sheldon personality uses the noun-phrase extractor to lookup relevant senteces in the corpora and produces a sassy message incorporating the relevant sentences.
+
+Our RegExp parser tags noun phrases containing named entities as EP, and tags normal noun phrases as NP. The grammar we use for our RegExp parser is:
+
+~~~~
+NOUN:
+    {<VBG|NN.*|JJ|>*<NN.*>}
+
+ENTITY:
+    {<VBG|NN|NE.*|JJ|>*<NE.*>}
+    {<NE.*><VBG|NN|NE|JJ|>*<NN.*>}
+
+EP:
+    {<NOUN|ENTITY><IN>?<ENTITY>}
+    {<ENTITY><IN>?<NOUN|ENTITY>}
+    {<ENTITY>}
+
+NP:
+    {<NOUN>}
+    {<NOUN><IN>?<NOUN>}
+~~~~
 
 
-Originally, we were looking up data from wikipedia on-the-fly, but we decided it's much faster by using locally stored corpora.
+## Comments
 
-## Testing
+This was a pretty quickly-crafted approach that does not really use custom trained machine learning approaches, as we would have to find or produce training data and then tune our learning approach.
+However, if we had more time, we could classify the type of incoming message based on whether it's a question, what type of question, etc. so we can produce a more suitable reply.
+In addition, we might be able to use parse trees, bigrams, and other NLP techniques to produce new sentences rather than combining hardcoded data with data from the corpora.
+Originally, we were looking up data from wikipedia on-the-fly, but we decided it's much faster to use locally stored corpora.
+
+Regarding testing our chatbot, we had a few unit tests to test components like the noun phrase extractor, but most of the testing was done by hand.
+Hand testing is a reasonable approach due to us needing to see whether the bot could sustain a conversation with a person.
 
 ## Corpora
 
@@ -87,4 +119,14 @@ Computer Science Facts       [http://corpus.byu.edu/wiki/](http://corpus.byu.edu
 
 Table: Corpora used in Chatbot
 
-## Resources
+## Other Resources
+
+Noun phrase extraction:
+
+1. http://lexitron.nectec.or.th/public/COLING-2010_Beijing_China/PAPERS/pdf/PAPERS065.pdf
+2. https://gist.github.com/alexbowe/879414
+
+Named Entity Extraction:
+
+3. http://www.nltk.org/book/ch07.html
+
