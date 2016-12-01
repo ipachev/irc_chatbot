@@ -8,6 +8,7 @@ CPE 582 - Spring 2016 - Foaad Khosmood
 
 ### System Design
 ![System Design](ChatbotDesign.PNG)
+
 Our system design consists of several components, which are depicted in Figure 1:
 
 * Bot
