@@ -76,7 +76,10 @@ Because conversations are running in separate threads, it is necessary to create
 The complex greeting personality is simply an implementation of the state machine described in the phase 2 specifications of the lab assignment.
 The sheldon personality uses the noun-phrase extractor to lookup relevant senteces in the corpora and produces a sassy message incorporating the relevant sentences.
 
-Our RegExp parser tags noun phrases containing named entities as EP, and tags normal noun phrases as NP. The grammar we use for our RegExp parser is:
+We used the approach described in (3) to use NLTK's named entity recognizer.
+Our RegExp parser tags noun phrases containing named entities as EP, and tags normal noun phrases as NP.
+The grammar we use for our RegExp parser is based from the grammar used in (1) and (2), but also adds support for separately extracting noun phrases containing named entities.
+Here is our RegExp parser noun phrase extraction grammar:
 
 ~~~~
 NOUN:
@@ -106,6 +109,8 @@ Originally, we were looking up data from wikipedia on-the-fly, but we decided it
 
 Regarding testing our chatbot, we had a few unit tests to test components like the noun phrase extractor, but most of the testing was done by hand.
 Hand testing is a reasonable approach due to us needing to see whether the bot could sustain a conversation with a person.
+
+\pagebreak
 
 ## Corpora
 
