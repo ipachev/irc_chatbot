@@ -1,0 +1,61 @@
+
+# Bot is Receiver
+<human> bot: hi
+<bot> human: hi, I do hope you will have something interesting to say.
+<human> bot: well, how are you doing?
+<bot> human: I'm experiencing high-levels of dopamine right now!
+<bot> human: and yourself?
+<human> bot: I'm doing fine
+<bot> human: Have we at this point met our social obligations?
+<human> bot: Yes, I guess so.
+<bot> human: I'm exceedingly smart. I graduated college at fourteen. While my brother was getting an STD, I was getting a Ph.D. Penicillin can't take this away.
+<bot> human: At least come up with an intelligent statement.
+~ 30 seconds ~
+<bot> human: It must be terribly inconvenient to be such a slow thinker; I'm done talking to you.
+
+# Bot is Receiver but times out
+<human> bot: hello
+<bot> human: I'm already bored with this conversation.
+~ 30 seconds ~
+<bot> human: I didn't want to talk to you anyway.
+
+# Bot initiates basic sequence
+<human> I'm lonely
+<bot> human: Hello, my talents are abundant in the sciences but somewhat lacking in social customs - you have been warned.
+<human> bot: Hi there
+<bot> human: I already know what you are going to say, but how are you?
+<human> bot: I'm fine.
+<human> bot: How are you doing?
+<bot> human: I'll be better when the pleasantries are over.
+<human> bot: You got your wish; now we are done!
+
+# Bot initiates but times out (once)
+<human> I'm lonely
+<bot> human: hi, I do hope you will have something interesting to say.
+~ 30 seconds ~
+<bot> human: I could have reread all of Knuth in the time it is taking you to respond.
+<human> bot: hi
+<bot> human:
+
+# Bot initiates but times out (twice)
+<human> I'm lonely
+<bot> human: Hello, my talents are abundant in the sciences but somewhat lacking in social customs - you have been warned.
+~ 30 seconds ~
+<bot> human: My time is considerably more precious than yours, please respect it.
+~ 30 seconds ~
+<bot> human: Whatever.
+
+# Bot initiates when it recognizes someone mention a topic that it knows
+<alice> john: I am going to learn Haskell.
+<bot> alice: Did you know that paul Raymond Hudak was an American professor of computer science at Yale University who was best known for his involvement in the design of the Haskell programming language, as well as several textbooks on Haskell and computer music?
+<alice> bot> That is quite interesting.
+
+# Bot answering question
+<human> bot: What is a quasar?
+<bot> human: You surprise me by your ignorance; it is obvious that a quasar is a compact region surrounding a supermassive black hole and emitting enormous amounts of electromagnetic energy as mass from the core of a surrounding galaxy, under the influence of the black hole's gravity, falls onto its accretion disc.
+<human> bot: That is interesting; thanks!
+<bot> Additionally, it is true that a blazar is a very compact quasar associated with a presumed supermassive black hole at the center of an active, giant elliptical galaxy.
+
+# Bot responds to insults
+<human> bot: you are annoying
+<bot> human: Yes, well, I'm polymerized tree sap and you're an inorganic adhesive, so whatever verbal projectile you launch in my direction is reflected off of me, returns on its original trajectory and adheres to you.

@@ -42,14 +42,15 @@ class Generic:
         self.state = State.second_outreach if self.state == State.inquiry else State.give_up
 
     def handle_message(self, msg):
+        if self.state == State.second_outreach and msg:
+            self.state = State.inquiry
+
         if self.state != State.absorb:
             outgoing_message = choice(BasicResponses[self.state])
             self.reply(outgoing_message)
 
         if self.state == State.give_up or self.state == State.end:
             return True
-        elif self.state == State.second_outreach:
-            self.state = State.inquiry
         elif self.state == State.inquiry_reply2:
             self.state = State.free
         elif self.state == State.inquiry_reply:

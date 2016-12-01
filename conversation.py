@@ -64,6 +64,7 @@ class ConversationStateMachine:
                 incoming_message = self.message_queue.get(timeout=30)
                 sleep(uniform(1, 3))
             except Empty:
+                incoming_message = None
                 self.active.handle_timeout()
             if self.active.delegate(incoming_message):
                 if self.active is self.generic:
